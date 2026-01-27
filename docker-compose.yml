@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # LongCat Avatar Service (Main AI Model)
+  # ============================================
+  longcat-avatar:
+    build:
+      context: ./longcat
+      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/sfitz911-longcat:${DOCKER_IMAGE_TAG:-latest}
+    container_name: sfitz911-longcat
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - MODEL_PATH=${MODEL_PATH:-/app/models/longcat}
+      - OUTPUT_PATH=${OUTPUT_PATH:-/app/outputs}
+      - TORCH_HOME=${TORCH_HOME:-/app/models/torch}
+      - BATCH_SIZE=${BATCH_SIZE:-1}
+      - MAX_VIDEO_LENGTH=${MAX_VIDEO_LENGTH:-60}
+      - VIDEO_FPS=${VIDEO_FPS:-30}
+      - API_HOST=${API_HOST:-0.0.0.0}
+      - API_PORT=${API_PORT:-8000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_REGION=${S3_REGION:-us-east-1}
+    volumes:
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+      - ./longcat:/app/code
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5m
+    networks:
+      - sfitz911-network
+
+  # ============================================
+  # n8n Workflow Orchestration
+  # ============================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: sfitz911-n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-changeme}
+      - N8N_HOST=${N8N_HOST:-0.0.0.0}
+      - N8N_PORT=${N8N_PORT:-5678}
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - GENERIC_TIMEZONE=America/New_York
+      - TZ=America/New_York
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - AZURE_SPEECH_KEY=${AZURE_SPEECH_KEY}
+      - AZURE_SPEECH_REGION=${AZURE_SPEECH_REGION}
+    volumes:
+      - ./n8n-data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/workflows
+    ports:
+      - "5678:5678"
+    depends_on:
+      - longcat-avatar
+      - redis
+    restart: unless-stopped
+    networks:
+      - sfitz911-network
+
+  # ============================================
+  # Redis (Job Queue - Optional)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: sfitz911-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - sfitz911-network
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  sfitz911-network:
+    driver: bridge
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  models:
+    driver: local
+  outputs:
+    driver: local
+  n8n-data:
+    driver: local
+  redis-data:
+    driver: local

@@ -1,0 +1,104 @@
+# SFitz911 Avatar Generator - Git Ignore
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Model weights (too large for git)
+models/
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+
+# Generated outputs
+outputs/
+*.mp4
+*.avi
+*.mov
+
+# Docker volumes
+n8n-data/
+redis-data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+ENV/
+env/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Cloud storage credentials
+credentials.json
+service-account.json
+*.pem
+*.key
+
+# Vast.ai specific
+vast_api_key.txt
+
+# Docker
+docker-compose.override.yml
+
+# Backup files
+*.bak
+*.backup
+
+# Large datasets
+datasets/
+data/
+
+# Test outputs
+test_outputs/
