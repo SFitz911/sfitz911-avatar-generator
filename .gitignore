@@ -1,32 +1,30 @@
+# ============================================
 # SFitz911 Avatar Generator - Git Ignore
+# ============================================
 
-# Environment variables
+# ============================================
+# Environment & Secrets
+# ============================================
 .env
 .env.local
 .env.*.local
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
 
-# Model weights (too large for git)
-models/
-*.pth
-*.ckpt
-*.safetensors
-*.bin
-
-# Generated outputs
-outputs/
-*.mp4
-*.avi
-*.mov
-
-# Docker volumes
-n8n-data/
-redis-data/
-
+# ============================================
 # Python
+# ============================================
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -40,65 +38,289 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
 venv/
 ENV/
 env/
+.venv
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# PyCharm
-.idea/
+# pyenv
+.python-version
 
-# VS Code
-.vscode/
-*.code-workspace
+# Celery
+celerybeat-schedule
+celerybeat.pid
 
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ============================================
+# AI Models & Large Files
+# ============================================
+models/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.pb
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# Model checkpoints
+checkpoints/
+weights/
+
+# ============================================
+# Generated Outputs
+# ============================================
+outputs/
+output/
+generated/
+results/
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.ogg
+*.flac
+
+# Temporary generation files
+temp/
+tmp/
+*.tmp
+
+# ============================================
+# Docker
+# ============================================
+# Docker volumes
+docker-volumes/
+volumes/
+
+# Docker build cache
+.dockerignore
+
+# ============================================
+# n8n
+# ============================================
+# n8n local data (if running locally)
+.n8n/
+n8n-data/
+
+# n8n credentials (never commit!)
+n8n/credentials/
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+log/
+*.log.*
+
+# ============================================
+# OS Files
+# ============================================
 # macOS
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
 # Windows
 Thumbs.db
+Thumbs.db:encryptable
 ehthumbs.db
-Desktop.ini
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
 $RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
 
-# Logs
-*.log
-logs/
-
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*.swo
+# Linux
 *~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
 
-# Cloud storage credentials
-credentials.json
+# ============================================
+# IDEs & Editors
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============================================
+# Cloud Provider Configs
+# ============================================
+# AWS
+.aws/
+aws-credentials.json
+
+# Google Cloud
+gcloud-credentials.json
 service-account.json
-*.pem
-*.key
 
-# Vast.ai specific
-vast_api_key.txt
+# Azure
+.azure/
 
-# Docker
-docker-compose.override.yml
-
-# Backup files
+# ============================================
+# Backup & Archive Files
+# ============================================
 *.bak
 *.backup
+*.old
+*.orig
+*.save
+*.swp
+*.swo
+*.tar
+*.tar.gz
+*.zip
+*.rar
+*.7z
 
-# Large datasets
-datasets/
-data/
+# ============================================
+# Database
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+
+# Redis dumps
+dump.rdb
+
+# ============================================
+# Monitoring & Profiling
+# ============================================
+*.prof
+*.lprof
+.profiling/
+
+# ============================================
+# Project Specific
+# ============================================
+# Downloaded model weights
+models/longcat/
+models/tts/
 
 # Test outputs
 test_outputs/
+test_videos/
+
+# Benchmarks
+benchmarks/
+benchmark_results/
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+
+# Vast.ai specific
+vast_instances.json
+instance_history.json
+
+# Sync status
+.sync_status
+sync_log.txt

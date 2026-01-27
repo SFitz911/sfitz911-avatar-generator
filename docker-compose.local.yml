@@ -1,0 +1,24 @@
+version: '3.8'
+
+# Local Testing Override (No GPU Required)
+# This file removes GPU requirements for testing on Docker Desktop
+# Use: docker-compose -f docker-compose.yml -f docker-compose.local.yml up
+
+services:
+  # Override LongCat service to remove GPU requirements
+  longcat-avatar:
+    runtime: runc  # Override nvidia runtime
+    deploy:
+      resources: {}  # Remove GPU resource requirements
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=
+      - CUDA_VISIBLE_DEVICES=
+      - MODEL_PATH=/app/models/longcat
+      - OUTPUT_PATH=/app/outputs
+      - TORCH_HOME=/app/models/torch
+      - BATCH_SIZE=1
+      - MAX_VIDEO_LENGTH=60
+      - VIDEO_FPS=30
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO

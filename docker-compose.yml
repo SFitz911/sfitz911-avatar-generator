@@ -28,9 +28,8 @@ services:
       - S3_BUCKET=${S3_BUCKET}
       - S3_REGION=${S3_REGION:-us-east-1}
     volumes:
-      - ./models:/app/models
+      - models:/app/models
       - ./outputs:/app/outputs
-      - ./longcat:/app/code
     ports:
       - "8000:8000"
     deploy:
@@ -69,14 +68,18 @@ services:
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
       - AZURE_SPEECH_KEY=${AZURE_SPEECH_KEY}
       - AZURE_SPEECH_REGION=${AZURE_SPEECH_REGION}
+      - LONGCAT_API_URL=http://longcat-avatar:8000
     volumes:
-      - ./n8n-data:/home/node/.n8n
-      - ./n8n/workflows:/home/node/workflows
+      - n8n-data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/workflows:ro
+      - ./outputs:/outputs
     ports:
       - "5678:5678"
     depends_on:
-      - longcat-avatar
-      - redis
+      longcat-avatar:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - sfitz911-network
@@ -87,11 +90,11 @@ services:
   redis:
     image: redis:7-alpine
     container_name: sfitz911-redis
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
-      - ./redis-data:/data
+      - redis-data:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
