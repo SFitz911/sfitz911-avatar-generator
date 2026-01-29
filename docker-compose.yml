@@ -9,8 +9,8 @@ services:
       context: ./longcat
       dockerfile: Dockerfile
     image: ${DOCKER_USERNAME}/sfitz911-longcat:${DOCKER_IMAGE_TAG:-latest}
-    container_name: sfitz911-longcat
-    runtime: nvidia
+    container_name: avatar-generator-container
+    # runtime: nvidia  # Commented out for local CPU testing
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
@@ -34,11 +34,11 @@ services:
       - "8000:8000"
     deploy:
       resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+        # reservations:       # Commented out for local CPU testing
+        #   devices:
+        #     - driver: nvidia
+        #       count: all
+        #       capabilities: [gpu]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

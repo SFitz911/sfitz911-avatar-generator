@@ -9,7 +9,9 @@ services:
   longcat-avatar:
     runtime: runc  # Override nvidia runtime
     deploy:
-      resources: {}  # Remove GPU resource requirements
+      resources:
+        reservations:
+          devices: []  # Explicitly empty the devices list
     environment:
       - NVIDIA_VISIBLE_DEVICES=
       - CUDA_VISIBLE_DEVICES=
