@@ -50,6 +50,25 @@ services:
       - sfitz911-network
 
   # ============================================
+  # Frontend (Streamlit Chat Interface)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sfitz911-frontend
+    environment:
+      - API_URL=http://longcat-avatar:8000
+      - N8N_URL=http://n8n:5678
+    ports:
+      - "8501:8501"
+    depends_on:
+      - longcat-avatar
+    restart: unless-stopped
+    networks:
+      - sfitz911-network
+
+  # ============================================
   # n8n Workflow Orchestration
   # ============================================
   n8n:
