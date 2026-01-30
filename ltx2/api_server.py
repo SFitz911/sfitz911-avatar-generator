@@ -376,6 +376,99 @@ async def list_videos(limit: int = 50):
     return {"videos": videos, "total": len(videos)}
 
 
+@app.post("/clean-workspace")
+async def clean_workspace():
+    """
+    Clean workspace to prevent face mixing and model confusion
+    Removes old reference images and cached data for a fresh start
+    """
+    try:
+        ltx2_path = Path(LTX2_DIR)
+        cleaned_items = []
+        
+        # Remove reference image folders that might cause mixing
+        ref_folders = [
+            "natasha_refs",
+            "natasha_single",
+            "avatar_clean",
+            "reference_images",
+            "refs"
+        ]
+        
+        for folder_name in ref_folders:
+            folder_path = ltx2_path / folder_name
+            if folder_path.exists():
+                shutil.rmtree(folder_path)
+                cleaned_items.append(f"Removed folder: {folder_name}")
+        
+        # Remove cached/test videos from LTX-2 directory
+        test_patterns = ["test_*.mp4", "demo_*.mp4", "natasha_*.mp4", "maya_*.mp4", "output.mp4"]
+        for pattern in test_patterns:
+            for file in ltx2_path.glob(pattern):
+                file.unlink()
+                cleaned_items.append(f"Removed video: {file.name}")
+        
+        # Clear temp uploaded images
+        for temp_file in TEMP_PATH.glob("*_avatar.*"):
+            temp_file.unlink()
+            cleaned_items.append(f"Removed temp: {temp_file.name}")
+        
+        # Create fresh avatar folder
+        avatar_folder = ltx2_path / "avatar_clean"
+        avatar_folder.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"Workspace cleaned: {len(cleaned_items)} items removed")
+        
+        return {
+            "status": "success",
+            "message": "Workspace cleaned successfully",
+            "cleaned_items": cleaned_items,
+            "avatar_folder": str(avatar_folder),
+            "tip": "Upload a fresh reference image for best results"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to clean workspace: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clean workspace: {str(e)}")
+
+
+@app.get("/workspace-status")
+async def workspace_status():
+    """
+    Get current workspace status
+    Shows how many reference images and cached videos exist
+    """
+    try:
+        ltx2_path = Path(LTX2_DIR)
+        
+        # Count reference images
+        ref_count = 0
+        ref_folders = ["natasha_refs", "natasha_single", "avatar_clean", "reference_images", "refs"]
+        for folder_name in ref_folders:
+            folder_path = ltx2_path / folder_name
+            if folder_path.exists():
+                ref_count += len(list(folder_path.glob("*.png"))) + len(list(folder_path.glob("*.jpg")))
+        
+        # Count cached videos in LTX-2 dir
+        cached_videos = len(list(ltx2_path.glob("*.mp4")))
+        
+        # Count temp files
+        temp_files = len(list(TEMP_PATH.glob("*")))
+        
+        return {
+            "status": "healthy",
+            "reference_images": ref_count,
+            "cached_videos": cached_videos,
+            "temp_files": temp_files,
+            "output_videos": len(list(OUTPUT_PATH.glob("*.mp4"))),
+            "recommendation": "Clean workspace if reference_images > 1 to prevent face mixing"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get workspace status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
+
 if __name__ == "__main__":
     host = os.getenv("API_HOST", "0.0.0.0")
     port = int(os.getenv("API_PORT", "8000"))

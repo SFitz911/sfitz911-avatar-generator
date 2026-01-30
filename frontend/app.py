@@ -111,6 +111,38 @@ with st.sidebar:
             value=f"You are a helpful AI assistant. Respond naturally and concisely in {language}.",
             height=100
         )
+    
+    # Workspace Management
+    st.divider()
+    st.subheader("🧹 Workspace Management")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🗑️ Clean Workspace", use_container_width=True, help="Remove old reference images and cached data to prevent face mixing"):
+            try:
+                response = requests.post(f"{api_url}/clean-workspace")
+                if response.status_code == 200:
+                    st.success("✅ Workspace cleaned!")
+                    st.info("Upload a fresh reference image for best results")
+                else:
+                    st.error(f"Failed to clean: {response.text}")
+            except Exception as e:
+                st.error(f"Error: {e}")
+    
+    with col2:
+        if st.button("📊 Check Status", use_container_width=True, help="View current workspace status"):
+            try:
+                response = requests.get(f"{api_url}/workspace-status")
+                if response.status_code == 200:
+                    data = response.json()
+                    st.info(f"📁 Reference images: {data.get('reference_images', 0)}\n\n🎬 Cached videos: {data.get('cached_videos', 0)}")
+                else:
+                    st.error(f"Failed: {response.text}")
+            except Exception as e:
+                st.error(f"Error: {e}")
+    
+    st.caption("⚠️ **Tip:** Clean workspace before uploading a new avatar to prevent face mixing")
 
 # Main Interface
 st.markdown('<h1 class="main-header">🤖 Avatar Chat Interface (LTX-2)</h1>', unsafe_allow_html=True)
