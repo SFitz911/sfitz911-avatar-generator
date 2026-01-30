@@ -34,6 +34,10 @@ fi
 
 echo "✅ LTX-2 models found"
 
+# Activate LTX-2 venv
+echo "🔧 Activating LTX-2 environment..."
+source $LTX2_DIR/.venv/bin/activate
+
 # Step 1: Start FastAPI Server (Background)
 echo ""
 echo "🚀 Step 1: Starting FastAPI Server (LTX-2)..."
