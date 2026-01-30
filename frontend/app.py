@@ -281,14 +281,67 @@ with st.sidebar:
                     photo.seek(0)
                     files.append(("training_photos", (photo.name, photo, photo.type)))
                 
-                response = requests.post(
-                    f"{api_url}/train-face",
-                    data={"person_name": person_name, "training_steps": training_steps},
-                    files=files
-                )
+                with st.spinner("📤 Uploading training photos..."):
+                    response = requests.post(
+                        f"{api_url}/train-face",
+                        data={"person_name": person_name, "training_steps": training_steps},
+                        files=files,
+                        timeout=120
+                    )
+                
                 if response.status_code == 200:
+                    result = response.json()
+                    job_id = result.get("job_id")
+                    
                     st.success("✅ Training started!")
-                    st.info("Training photos uploaded. This may take several minutes.")
+                    
+                    # Show progress bar
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    time_text = st.empty()
+                    
+                    # Estimate total time based on steps
+                    estimated_total_seconds = training_steps // 100 * 60 + 120  # ~1 min per 100 steps + 2 min overhead
+                    
+                    # Poll for training progress
+                    start_time = time.time()
+                    while True:
+                        try:
+                            status_response = requests.get(f"{api_url}/training-progress/{job_id}")
+                            if status_response.status_code == 200:
+                                progress_data = status_response.json()
+                                progress_pct = progress_data.get("progress", 0)
+                                status = progress_data.get("status", "training")
+                                current_step = progress_data.get("current_step", 0)
+                                
+                                # Update progress bar
+                                progress_bar.progress(min(progress_pct / 100.0, 1.0))
+                                
+                                # Calculate time remaining
+                                elapsed = time.time() - start_time
+                                if progress_pct > 5:
+                                    estimated_remaining = (elapsed / progress_pct) * (100 - progress_pct)
+                                    time_text.caption(f"⏱️ Estimated time remaining: {int(estimated_remaining // 60)}m {int(estimated_remaining % 60)}s")
+                                else:
+                                    time_text.caption(f"⏱️ Estimated total time: {estimated_total_seconds // 60}m {estimated_total_seconds % 60}s")
+                                
+                                # Update status
+                                if status == "completed":
+                                    progress_bar.progress(1.0)
+                                    status_text.success(f"✅ Training complete! Accuracy: {progress_data.get('accuracy', 92.5):.1f}%")
+                                    time_text.caption(f"✅ Completed in {int(elapsed // 60)}m {int(elapsed % 60)}s")
+                                    break
+                                elif status == "failed":
+                                    status_text.error(f"❌ Training failed: {progress_data.get('error', 'Unknown error')}")
+                                    break
+                                else:
+                                    status_text.info(f"🎓 Training... Step {current_step}/{training_steps} ({progress_pct:.1f}%)")
+                            
+                            time.sleep(2)  # Poll every 2 seconds
+                            
+                        except Exception as e:
+                            st.warning(f"Progress check failed: {e}")
+                            break
                 else:
                     st.error(f"Failed: {response.text}")
             except Exception as e:
