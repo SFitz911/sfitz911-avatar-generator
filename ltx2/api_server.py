@@ -11,7 +11,7 @@ import asyncio
 import subprocess
 import shutil
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
 
@@ -566,38 +566,56 @@ async def training_status():
         }
 
 
-class TrainFaceRequest(BaseModel):
-    person_name: str = Field(..., description="Name for this training profile")
-    training_steps: int = Field(500, ge=100, le=2000, description="Number of training steps")
-
-
 @app.post("/train-face")
-async def train_face(request: TrainFaceRequest, background_tasks: BackgroundTasks):
+async def train_face(
+    background_tasks: BackgroundTasks,
+    person_name: str = Form(..., description="Name for this training profile"),
+    training_steps: int = Form(300, description="Number of training steps"),
+    training_photos: List[UploadFile] = File(..., description="3-10 photos for training")
+):
     """
     Train a custom face profile for ultra-consistent generation
-    Creates a LoRA adapter specifically tuned to the reference photos
+    Accepts training photos via upload
     """
     try:
+        # Validate photo count
+        if len(training_photos) < 3:
+            raise HTTPException(status_code=400, detail="Upload at least 3 photos for training")
+        if len(training_photos) > 10:
+            raise HTTPException(status_code=400, detail="Maximum 10 photos allowed")
+        
         ltx2_path = Path(LTX2_DIR)
         avatar_folder = ltx2_path / "avatar_clean"
+        avatar_folder.mkdir(parents=True, exist_ok=True)
         
-        # Check if reference photos exist
-        if not avatar_folder.exists():
-            raise HTTPException(status_code=400, detail="No reference photos found. Upload photos first and click 'Check Status'.")
+        # Clear existing photos
+        for old_photo in avatar_folder.glob("*"):
+            old_photo.unlink()
         
-        photo_files = list(avatar_folder.glob("*.png")) + list(avatar_folder.glob("*.jpg"))
-        if len(photo_files) == 0:
-            raise HTTPException(status_code=400, detail="No photos in avatar_clean folder. Upload reference images first.")
+        # Save uploaded training photos
+        photo_files = []
+        for idx, photo in enumerate(training_photos):
+            photo_ext = Path(photo.filename).suffix
+            photo_path = avatar_folder / f"training_{idx}{photo_ext}"
+            
+            with open(photo_path, "wb") as f:
+                content = await photo.read()
+                f.write(content)
+            
+            photo_files.append(photo_path)
+            logger.info(f"Saved training photo: {photo_path}")
+        
+        logger.info(f"Uploaded {len(photo_files)} training photos for {person_name}")
         
         # Create training log directory
         training_logs_dir = BASE_DIR / "outputs" / "training_logs"
         training_logs_dir.mkdir(parents=True, exist_ok=True)
         
         # Initialize training log
-        training_log_path = training_logs_dir / f"{request.person_name}_face_lora.json"
+        training_log_path = training_logs_dir / f"{person_name}_face_lora.json"
         training_data = {
-            "person_name": request.person_name,
-            "training_steps": request.training_steps,
+            "person_name": person_name,
+            "training_steps": training_steps,
             "photo_count": len(photo_files),
             "started_at": datetime.utcnow().isoformat(),
             "status": "training",
@@ -615,19 +633,19 @@ async def train_face(request: TrainFaceRequest, background_tasks: BackgroundTask
             "status": "completed",
             "completed_at": datetime.utcnow().isoformat(),
             "current_accuracy": 92.5,
-            "epochs_completed": request.training_steps,
-            "recommendation": f"Training complete! Use Face Consistency Strength 1.8-2.0 with {request.person_name}'s photos for maximum accuracy."
+            "epochs_completed": training_steps,
+            "recommendation": f"Training complete! Use Face Consistency Strength 1.8-2.0 with {person_name}'s photos for maximum accuracy."
         })
         
         with open(training_log_path, 'w') as f:
             json.dump(training_data, f, indent=2)
         
-        logger.info(f"Face training profile created for {request.person_name}")
+        logger.info(f"Face training profile created for {person_name}")
         
         return {
             "status": "success",
-            "message": f"Training profile created for {request.person_name}",
-            "training_steps": request.training_steps,
+            "message": f"Training profile created for {person_name}",
+            "training_steps": training_steps,
             "photo_count": len(photo_files),
             "accuracy": 92.5,
             "recommendation": "Set Face Consistency Strength to 1.8-2.0 for best results"

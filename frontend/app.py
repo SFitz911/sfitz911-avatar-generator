@@ -243,22 +243,52 @@ with st.sidebar:
     except Exception as e:
         st.info("📚 Face training not yet configured")
     
+    # Training photo upload
+    st.write("**Upload Training Photos:**")
+    training_photos = st.file_uploader(
+        "Upload 3-10 photos of the same person",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True,
+        help="Different angles and expressions work best. More variety = better training!"
+    )
+    
+    if training_photos:
+        st.success(f"✅ {len(training_photos)} photo(s) uploaded")
+        
+        # Show thumbnails
+        cols = st.columns(min(len(training_photos), 5))
+        for idx, photo in enumerate(training_photos[:5]):
+            with cols[idx]:
+                st.image(photo, caption=f"Photo {idx+1}", use_container_width=True)
+        
+        if len(training_photos) > 5:
+            st.caption(f"+ {len(training_photos) - 5} more photo(s)")
+    else:
+        st.warning("⚠️ Upload 3-10 photos to enable training")
+    
     # Training controls
     person_name = st.text_input("Person Name", value="Avatar", help="Name for this training profile")
-    training_steps = st.slider("Training Steps", 100, 1000, 500, step=100, help="More steps = better accuracy but longer training time")
-    st.caption(f"⏱️ Estimated time: ~{training_steps // 10} minutes")
+    training_steps = st.slider("Training Steps", 100, 500, 300, step=50, help="More steps = better accuracy but longer training time")
+    st.caption(f"⏱️ Estimated time: ~{training_steps // 100 + 2}-{training_steps // 100 + 4} minutes")
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🎓 Train Face", use_container_width=True, help="Train model on uploaded reference images for super accurate results"):
+        if st.button("🎓 Train Face", use_container_width=True, help="Train model on uploaded reference images for super accurate results", disabled=not training_photos):
             try:
+                # Upload training photos first
+                files = []
+                for idx, photo in enumerate(training_photos):
+                    photo.seek(0)
+                    files.append(("training_photos", (photo.name, photo, photo.type)))
+                
                 response = requests.post(
                     f"{api_url}/train-face",
-                    json={"person_name": person_name, "training_steps": training_steps}
+                    data={"person_name": person_name, "training_steps": training_steps},
+                    files=files
                 )
                 if response.status_code == 200:
                     st.success("✅ Training started!")
-                    st.info("This may take several minutes. Check status to monitor progress.")
+                    st.info("Training photos uploaded. This may take several minutes.")
                 else:
                     st.error(f"Failed: {response.text}")
             except Exception as e:
