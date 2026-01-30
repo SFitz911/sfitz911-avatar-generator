@@ -143,6 +143,72 @@ with st.sidebar:
                 st.error(f"Error: {e}")
     
     st.caption("⚠️ **Tip:** Clean workspace before uploading a new avatar to prevent face mixing")
+    
+    # Face Training Section
+    st.divider()
+    st.subheader("🎓 Face Training (Advanced)")
+    
+    # Check if training profile exists
+    try:
+        training_response = requests.get(f"{api_url}/training-status")
+        if training_response.status_code == 200:
+            training_data = training_response.json()
+            
+            if training_data.get("has_training"):
+                # Show training metrics
+                st.success(f"✅ Trained Profile: **{training_data.get('person_name', 'Unknown')}**")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Training Steps", training_data.get('training_steps', 0))
+                with col2:
+                    st.metric("Accuracy", f"{training_data.get('current_accuracy', 0):.1f}%")
+                with col3:
+                    st.metric("Photos Used", training_data.get('photo_count', 0))
+                
+                # Progress bar
+                accuracy = training_data.get('current_accuracy', 0)
+                st.progress(min(accuracy / 100.0, 1.0))
+                st.caption(f"🎯 Target: {training_data.get('accuracy_target', 95)}% | Current: {accuracy:.1f}%")
+                
+                if accuracy >= 90:
+                    st.info("💡 **Excellent!** Set Face Consistency to 1.8-2.0 for best results")
+                elif accuracy >= 80:
+                    st.warning("⚠️ **Good** but could be better. Consider adding more training photos.")
+                else:
+                    st.warning("⚠️ **Low accuracy.** Upload 3-10 varied photos and retrain.")
+            else:
+                st.info("📚 No training profile found. Upload 3-10 photos and train for best results!")
+        
+    except Exception as e:
+        st.info("📚 Face training not yet configured")
+    
+    # Training controls
+    person_name = st.text_input("Person Name", value="Avatar", help="Name for this training profile")
+    training_steps = st.slider("Training Steps", 100, 1000, 500, step=100, help="More steps = better accuracy but longer training time")
+    st.caption(f"⏱️ Estimated time: ~{training_steps // 10} minutes")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🎓 Train Face", use_container_width=True, help="Train model on uploaded reference images for super accurate results"):
+            try:
+                response = requests.post(
+                    f"{api_url}/train-face",
+                    json={"person_name": person_name, "training_steps": training_steps}
+                )
+                if response.status_code == 200:
+                    st.success("✅ Training started!")
+                    st.info("This may take several minutes. Check status to monitor progress.")
+                else:
+                    st.error(f"Failed: {response.text}")
+            except Exception as e:
+                st.error(f"Error: {e}")
+    
+    with col2:
+        if st.button("🔄 Refresh Status", use_container_width=True):
+            st.rerun()
+    
+    st.caption("💡 **Tip:** Training creates a custom profile for ultra-consistent face generation")
 
 # Main Interface
 st.markdown('<h1 class="main-header">🤖 Avatar Chat Interface (LTX-2)</h1>', unsafe_allow_html=True)
