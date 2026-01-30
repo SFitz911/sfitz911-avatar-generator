@@ -34,15 +34,14 @@ fi
 
 echo "✅ LTX-2 models found"
 
-# Activate LTX-2 venv
-echo "🔧 Activating LTX-2 environment..."
-source $LTX2_DIR/.venv/bin/activate
+# Use LTX-2 venv's python directly (no need to activate)
+PYTHON_BIN="$LTX2_DIR/.venv/bin/python"
 
 # Step 1: Start FastAPI Server (Background)
 echo ""
 echo "🚀 Step 1: Starting FastAPI Server (LTX-2)..."
 cd ltx2
-python3 api_server.py &
+$PYTHON_BIN api_server.py &
 API_PID=$!
 cd ..
 echo "   API running on PID $API_PID"
@@ -78,7 +77,7 @@ done
 echo ""
 echo "🎨 Step 3: Starting Frontend..."
 cd frontend
-streamlit run app.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true
+$PYTHON_BIN -m streamlit run app.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true
 
 # Cleanup on exit
 trap "kill $API_PID $N8N_PID" EXIT

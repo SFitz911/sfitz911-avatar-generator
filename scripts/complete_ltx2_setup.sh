@@ -73,21 +73,15 @@ fi
 
 echo "✅ All models downloaded"
 
-# Step 4: Install API dependencies
+# Step 4: Install API and Frontend dependencies
 echo ""
-echo "🔧 Step 4: Installing API dependencies..."
+echo "🔧 Step 4: Installing API and Frontend dependencies..."
 cd /workspace/LTX-2
-source .venv/bin/activate
-pip install fastapi uvicorn loguru python-multipart
 
-echo "✅ API dependencies installed"
+# Use UV to install in the LTX-2 venv (not pip!)
+uv pip install fastapi uvicorn loguru python-multipart streamlit requests pillow
 
-# Step 5: Install frontend dependencies
-echo ""
-echo "🎨 Step 5: Installing frontend dependencies..."
-pip install streamlit requests pillow
-
-echo "✅ Frontend dependencies installed"
+echo "✅ All Python dependencies installed"
 
 # Step 6: Install n8n (optional)
 echo ""
