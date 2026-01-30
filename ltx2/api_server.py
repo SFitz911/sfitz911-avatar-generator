@@ -662,10 +662,12 @@ async def training_status():
             "has_training": True,
             "person_name": training_data.get("person_name", "Unknown"),
             "training_steps": training_data.get("training_steps", 0),
+            "current_step": training_data.get("current_step", training_data.get("training_steps", 0)),
             "photo_count": training_data.get("photo_count", 0),
             "current_accuracy": training_data.get("current_accuracy", 0),
             "accuracy_target": training_data.get("accuracy_target", 95),
             "status": training_data.get("status", "unknown"),
+            "progress": training_data.get("progress", 100 if training_data.get("status") == "completed" else 0),
             "completed_at": training_data.get("completed_at"),
             "recommendation": training_data.get("recommendation", "")
         }

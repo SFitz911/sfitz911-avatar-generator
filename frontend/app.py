@@ -216,27 +216,43 @@ with st.sidebar:
             
             if training_data.get("has_training"):
                 # Show training metrics
-                st.success(f"✅ Trained Profile: **{training_data.get('person_name', 'Unknown')}**")
+                status = training_data.get('status', 'unknown')
+                
+                if status == "training":
+                    st.warning(f"⏳ Training in progress: **{training_data.get('person_name', 'Unknown')}**")
+                else:
+                    st.success(f"✅ Trained Profile: **{training_data.get('person_name', 'Unknown')}**")
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Training Steps", training_data.get('training_steps', 0))
+                    current_step = training_data.get('current_step', training_data.get('training_steps', 0))
+                    total_steps = training_data.get('training_steps', 0)
+                    st.metric("Training Steps", f"{current_step}/{total_steps}")
                 with col2:
                     st.metric("Accuracy", f"{training_data.get('current_accuracy', 0):.1f}%")
                 with col3:
                     st.metric("Photos Used", training_data.get('photo_count', 0))
                 
                 # Progress bar
-                accuracy = training_data.get('current_accuracy', 0)
-                st.progress(min(accuracy / 100.0, 1.0))
-                st.caption(f"🎯 Target: {training_data.get('accuracy_target', 95)}% | Current: {accuracy:.1f}%")
-                
-                if accuracy >= 90:
-                    st.info("💡 **Excellent!** Set Face Consistency to 1.8-2.0 for best results")
-                elif accuracy >= 80:
-                    st.warning("⚠️ **Good** but could be better. Consider adding more training photos.")
+                if status == "training":
+                    progress = training_data.get('progress', 0)
+                    st.progress(min(progress / 100.0, 1.0))
+                    st.caption(f"⏳ Training... {progress:.1f}% complete")
+                    
+                    # Auto-refresh while training
+                    time.sleep(2)
+                    st.rerun()
                 else:
-                    st.warning("⚠️ **Low accuracy.** Upload 3-10 varied photos and retrain.")
+                    accuracy = training_data.get('current_accuracy', 0)
+                    st.progress(min(accuracy / 100.0, 1.0))
+                    st.caption(f"🎯 Target: {training_data.get('accuracy_target', 95)}% | Current: {accuracy:.1f}%")
+                    
+                    if accuracy >= 90:
+                        st.info("💡 **Excellent!** Set Face Consistency to 1.8-2.0 for best results")
+                    elif accuracy >= 80:
+                        st.warning("⚠️ **Good** but could be better. Consider adding more training photos.")
+                    else:
+                        st.warning("⚠️ **Low accuracy.** Upload 3-10 varied photos and retrain.")
             else:
                 st.info("📚 No training profile found. Upload 3-10 photos and train for best results!")
         
