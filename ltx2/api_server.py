@@ -876,13 +876,19 @@ async def master_reset():
                 deleted_count += 1
                 deleted_items.append(f"Training folder: {folder_name}")
         
-        # 4. Delete training logs
+        # 4. Delete training logs and directory
         training_logs_dir = BASE_DIR / "outputs" / "training_logs"
         if training_logs_dir.exists():
             for log_file in training_logs_dir.glob("*.json"):
                 log_file.unlink()
                 deleted_count += 1
                 deleted_items.append(f"Training log: {log_file.name}")
+            # Remove the directory itself
+            try:
+                training_logs_dir.rmdir()
+                deleted_items.append("Training logs directory removed")
+            except:
+                pass  # Directory not empty or doesn't exist
         
         # 5. Clear temp files
         for temp_file in TEMP_PATH.glob("*"):

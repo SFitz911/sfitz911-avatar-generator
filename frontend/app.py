@@ -136,11 +136,14 @@ with st.sidebar:
             "Face Consistency Strength",
             min_value=0.5,
             max_value=2.0,
-            value=1.7,
+            value=1.9,
             step=0.1,
-            help="Higher values = stronger adherence to reference image. Try 1.5-1.8 for better face consistency."
+            help="Higher values = stronger adherence to reference image. 1.8-2.0 prevents face morphing."
         )
-        st.caption("💡 **Tip:** Use 1.5-1.8 for consistent facial features throughout the video")
+        st.caption("💡 **Tip:** Use 1.8-2.0 to prevent face morphing. Lower = more variation.")
+        
+        if image_strength < 1.5:
+            st.warning("⚠️ Low strength may cause face morphing. Try 1.8+ for consistency.")
     else:
         # Random avatar mode
         uploaded_image = None
@@ -412,6 +415,34 @@ with st.sidebar:
             st.rerun()
     
     st.caption("💡 **Tip:** Training creates a custom profile for ultra-consistent face generation")
+    
+    # Face Consistency Help
+    with st.expander("❓ Face Morphing? Read This"):
+        st.markdown("""
+        ### 🎯 If Face Morphs/Changes During Video:
+        
+        **Quick Fixes:**
+        1. ✅ **Increase Face Consistency to 1.9-2.0** (slider above)
+        2. ✅ **Use Trained Profile** (upload 5-10 photos, train, toggle ON)
+        3. ✅ **Generate shorter clips** (5-10 seconds more stable)
+        4. ✅ **Clean Workspace** before new person
+        
+        **Best Settings for Stable Face:**
+        - Face Strength: **1.8 - 2.0**
+        - Training: **5-10 photos, 300-500 steps**
+        - Duration: **5-10 seconds per clip**
+        - Mode: **Trained Profile** ✓
+        
+        **Why Morphing Happens:**
+        - Low image strength (< 1.5) gives AI too much freedom
+        - Long videos (20s+) accumulate changes
+        - No training = AI guesses facial angles
+        - One photo = incomplete face information
+        
+        📖 **Full guide:** See `docs/FACE_CONSISTENCY_GUIDE.md`
+        """)
+        
+        st.info("💡 **Pro Tip:** Train with 5-10 photos at different angles, then use strength 1.9 = perfect consistency!")
 
 # Main Interface
 st.markdown('<h1 class="main-header">🤖 Avatar Chat Interface (LTX-2)</h1>', unsafe_allow_html=True)
