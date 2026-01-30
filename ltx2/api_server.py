@@ -843,6 +843,72 @@ async def train_face(
         raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}")
 
 
+@app.post("/master-reset")
+async def master_reset():
+    """
+    MASTER RESET: Delete all videos, training data, and workspace
+    This is a destructive operation that cannot be undone
+    """
+    try:
+        deleted_count = 0
+        deleted_items = []
+        
+        ltx2_path = Path(LTX2_DIR)
+        
+        # 1. Delete all generated videos from outputs folder
+        for video_file in OUTPUT_PATH.glob("*.mp4"):
+            video_file.unlink()
+            deleted_count += 1
+            deleted_items.append(f"Output video: {video_file.name}")
+        
+        # 2. Delete all videos from LTX-2 directory
+        for video_file in ltx2_path.glob("*.mp4"):
+            video_file.unlink()
+            deleted_count += 1
+            deleted_items.append(f"LTX-2 video: {video_file.name}")
+        
+        # 3. Delete training photos
+        ref_folders = ["natasha_refs", "natasha_single", "avatar_clean", "reference_images", "refs"]
+        for folder_name in ref_folders:
+            folder_path = ltx2_path / folder_name
+            if folder_path.exists():
+                shutil.rmtree(folder_path)
+                deleted_count += 1
+                deleted_items.append(f"Training folder: {folder_name}")
+        
+        # 4. Delete training logs
+        training_logs_dir = BASE_DIR / "outputs" / "training_logs"
+        if training_logs_dir.exists():
+            for log_file in training_logs_dir.glob("*.json"):
+                log_file.unlink()
+                deleted_count += 1
+                deleted_items.append(f"Training log: {log_file.name}")
+        
+        # 5. Clear temp files
+        for temp_file in TEMP_PATH.glob("*"):
+            temp_file.unlink()
+            deleted_count += 1
+            deleted_items.append(f"Temp file: {temp_file.name}")
+        
+        # 6. Clear job database
+        jobs_db.clear()
+        deleted_items.append("Job history cleared")
+        
+        logger.warning(f"MASTER RESET EXECUTED: {deleted_count} items deleted")
+        
+        return {
+            "status": "success",
+            "message": "Master reset complete - all data deleted",
+            "deleted_count": deleted_count,
+            "deleted_items": deleted_items[:20],  # First 20 items
+            "warning": "This action cannot be undone"
+        }
+        
+    except Exception as e:
+        logger.error(f"Master reset failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Reset failed: {str(e)}")
+
+
 if __name__ == "__main__":
     host = os.getenv("API_HOST", "0.0.0.0")
     port = int(os.getenv("API_PORT", "8000"))

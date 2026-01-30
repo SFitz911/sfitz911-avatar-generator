@@ -567,4 +567,49 @@ if st.session_state.video_history:
 
 # Footer
 st.divider()
-st.caption("Powered by LongCat Avatar AI on H200 | Built by SFitz911")
+
+# Master Reset Section
+st.subheader("⚠️ Danger Zone")
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.warning("**Master Reset**: Delete ALL videos, training data, and history. This cannot be undone!")
+    st.caption("✓ Deletes all generated videos\n✓ Removes training profiles\n✓ Clears workspace\n✓ Resets to fresh installation")
+
+with col2:
+    st.write("")  # Spacing
+    if st.button("🗑️ MASTER RESET", type="primary", use_container_width=True):
+        # Confirm with a second check
+        if "confirm_reset" not in st.session_state:
+            st.session_state.confirm_reset = True
+            st.warning("⚠️ Click again to confirm!")
+            st.rerun()
+        else:
+            # Execute master reset
+            try:
+                response = requests.post(f"{api_url}/master-reset")
+                if response.status_code == 200:
+                    result = response.json()
+                    st.success("✅ Master Reset Complete!")
+                    st.info(f"Deleted: {result.get('deleted_count', 0)} items")
+                    
+                    # Clear session state
+                    for key in list(st.session_state.keys()):
+                        del st.session_state[key]
+                    
+                    st.balloons()
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.error(f"Reset failed: {response.text}")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+# Reset confirmation state after other actions
+if "confirm_reset" in st.session_state and st.session_state.get("confirm_reset"):
+    if st.button("Cancel Reset"):
+        del st.session_state.confirm_reset
+        st.rerun()
+
+st.divider()
+st.caption("Powered by LTX-2 on H100 | Built by SFitz911")
