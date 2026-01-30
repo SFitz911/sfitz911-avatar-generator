@@ -84,6 +84,17 @@ with st.sidebar:
     if uploaded_image:
         st.image(uploaded_image, caption="Your Avatar", use_container_width=True)
     
+    # Image Strength Control
+    image_strength = st.slider(
+        "Face Consistency Strength",
+        min_value=0.5,
+        max_value=2.0,
+        value=1.0,
+        step=0.1,
+        help="Higher values = stronger adherence to reference image. Try 1.5-1.8 for better face consistency."
+    )
+    st.caption("💡 **Tip:** Use 1.5-1.8 for consistent facial features throughout the video")
+    
     # Video Settings
     st.subheader("🎬 Video Settings")
     resolution = st.radio("Base Resolution", ["512", "768"], index=0)
@@ -168,7 +179,8 @@ if user_input:
                     "text": ai_response,
                     "language": language,
                     "duration": duration_limit,
-                    "resolution": resolution
+                    "resolution": resolution,
+                    "image_strength": image_strength  # Add face consistency control
                 }
                 
                 # Add image if uploaded

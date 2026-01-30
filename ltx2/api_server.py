@@ -115,7 +115,8 @@ async def generate_avatar_video(
     language: str,
     image_path: Optional[str],
     resolution: str,
-    num_frames: int
+    num_frames: int,
+    image_strength: float = 1.0
 ):
     """
     Background task to generate avatar video using LTX-2
@@ -150,9 +151,9 @@ async def generate_avatar_video(
             "--seed", "42"
         ]
         
-        # Add image if provided
+        # Add image if provided (with configurable strength)
         if image_path:
-            cmd.extend(["--image", image_path, "0", "1.0"])
+            cmd.extend(["--image", image_path, "0", str(image_strength)])
         
         logger.info(f"Running LTX-2 command for job {job_id}")
         
@@ -260,7 +261,8 @@ async def generate(
     language: str = Form("English", description="Language for speech"),
     resolution: str = Form("512", description="Base resolution (512 or 768)"),
     duration: int = Form(20, description="Video duration in seconds (5-30)"),
-    image: Optional[UploadFile] = File(None, description="Avatar reference image (optional)")
+    image: Optional[UploadFile] = File(None, description="Avatar reference image (optional)"),
+    image_strength: float = Form(1.0, description="Face consistency strength (0.5-2.0, higher = more consistent)")
 ):
     """
     Generate avatar video with synchronized audio using LTX-2
@@ -304,7 +306,8 @@ async def generate(
         language=language,
         image_path=image_path,
         resolution=resolution,
-        num_frames=num_frames
+        num_frames=num_frames,
+        image_strength=image_strength
     )
     
     return GenerateResponse(
