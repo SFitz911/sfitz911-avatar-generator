@@ -116,17 +116,32 @@ async def generate_avatar_video(
     image_path: Optional[str],
     resolution: str,
     num_frames: int,
-    image_strength: float = 1.0
+    image_strength: float = 1.0,
+    random_avatar: bool = False,
+    avatar_gender: str = "Any",
+    avatar_age: str = "Any",
+    avatar_ethnicity: str = "Any",
+    avatar_style: str = "Professional"
 ):
     """
     Background task to generate avatar video using LTX-2
+    Supports both reference image mode and random avatar generation
     """
     try:
         logger.info(f"Starting LTX-2 generation for job {job_id}")
         update_job_status(job_id, JobStatus.PROCESSING, progress=10.0)
         
         # Build prompt with language and text
-        if image_path:
+        if random_avatar:
+            # Build random avatar description
+            gender_desc = "" if avatar_gender == "Any" else f"{avatar_gender.lower()} "
+            age_desc = "" if avatar_age == "Any" else f"{avatar_age.lower()}, "
+            ethnicity_desc = "" if avatar_ethnicity == "Any" else f"{avatar_ethnicity} "
+            style_desc = avatar_style.lower()
+            
+            prompt = f"A photorealistic {gender_desc}{ethnicity_desc}person, {age_desc}{style_desc} appearance, speaking fluently in {language}. They say: '{text}' Clear pronunciation, engaging eye contact, natural expressions, modern setting, high quality, cinematic lighting, 4K detail."
+            logger.info(f"Random avatar prompt: {prompt}")
+        elif image_path:
             prompt = f"A professional person speaking fluently in {language}. They say: '{text}' Clear pronunciation, engaging eye contact, natural gestures, modern setting, professional appearance."
         else:
             prompt = f"A professional person speaking fluently in {language}. They say: '{text}' Clear articulation, warm smile, modern office background, natural lighting, confident expression."
@@ -262,7 +277,12 @@ async def generate(
     resolution: str = Form("512", description="Base resolution (512 or 768)"),
     duration: int = Form(20, description="Video duration in seconds (5-30)"),
     image: Optional[UploadFile] = File(None, description="Avatar reference image (optional)"),
-    image_strength: float = Form(1.0, description="Face consistency strength (0.5-2.0, higher = more consistent)")
+    image_strength: float = Form(1.0, description="Face consistency strength (0.5-2.0, higher = more consistent)"),
+    random_avatar: bool = Form(False, description="Generate random avatar instead of using reference image"),
+    avatar_gender: str = Form("Any", description="Gender for random avatar"),
+    avatar_age: str = Form("Any", description="Age range for random avatar"),
+    avatar_ethnicity: str = Form("Any", description="Ethnicity for random avatar"),
+    avatar_style: str = Form("Professional", description="Style for random avatar")
 ):
     """
     Generate avatar video with synchronized audio using LTX-2
@@ -307,7 +327,12 @@ async def generate(
         image_path=image_path,
         resolution=resolution,
         num_frames=num_frames,
-        image_strength=image_strength
+        image_strength=image_strength,
+        random_avatar=random_avatar,
+        avatar_gender=avatar_gender,
+        avatar_age=avatar_age,
+        avatar_ethnicity=avatar_ethnicity,
+        avatar_style=avatar_style
     )
     
     return GenerateResponse(

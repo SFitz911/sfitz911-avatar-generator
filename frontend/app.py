@@ -73,27 +73,57 @@ with st.sidebar:
     # Info: No TTS needed with LTX-2!
     st.info("🎙️ **Audio Generation:** LTX-2 automatically generates natural speech in your selected language!")
     
-    # Avatar Image Upload
-    st.subheader("🖼️ Avatar Image")
-    uploaded_image = st.file_uploader(
-        "Upload Reference Image",
-        type=["png", "jpg", "jpeg"],
-        help="Upload a photo for the avatar's face (ATI2V mode for best quality)"
+    # Avatar Mode Selection
+    st.subheader("🖼️ Avatar Mode")
+    
+    avatar_mode = st.radio(
+        "Generation Mode",
+        options=["Reference Image", "Random Avatar"],
+        index=0,
+        help="Use your own photo or let AI create a random person"
     )
     
-    if uploaded_image:
-        st.image(uploaded_image, caption="Your Avatar", use_container_width=True)
-    
-    # Image Strength Control
-    image_strength = st.slider(
-        "Face Consistency Strength",
-        min_value=0.5,
-        max_value=2.0,
-        value=1.0,
-        step=0.1,
-        help="Higher values = stronger adherence to reference image. Try 1.5-1.8 for better face consistency."
-    )
-    st.caption("💡 **Tip:** Use 1.5-1.8 for consistent facial features throughout the video")
+    if avatar_mode == "Reference Image":
+        # Upload reference image
+        uploaded_image = st.file_uploader(
+            "Upload Reference Image",
+            type=["png", "jpg", "jpeg"],
+            help="Upload a photo for the avatar's face (ATI2V mode for best quality)"
+        )
+        
+        if uploaded_image:
+            st.image(uploaded_image, caption="Your Avatar", use_container_width=True)
+        
+        # Image Strength Control
+        image_strength = st.slider(
+            "Face Consistency Strength",
+            min_value=0.5,
+            max_value=2.0,
+            value=1.7,
+            step=0.1,
+            help="Higher values = stronger adherence to reference image. Try 1.5-1.8 for better face consistency."
+        )
+        st.caption("💡 **Tip:** Use 1.5-1.8 for consistent facial features throughout the video")
+    else:
+        # Random avatar mode
+        uploaded_image = None
+        image_strength = 0.0
+        
+        st.info("🎲 **Random Avatar Mode**: AI will generate a unique, realistic person")
+        
+        # Avatar characteristics
+        st.write("**Customize Random Avatar:**")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            avatar_gender = st.selectbox("Gender", ["Any", "Male", "Female", "Non-binary"])
+            avatar_age = st.selectbox("Age Range", ["Any", "Young Adult (20-30)", "Adult (30-45)", "Middle Age (45-60)", "Senior (60+)"])
+        
+        with col2:
+            avatar_ethnicity = st.selectbox("Ethnicity", ["Any", "Caucasian", "African", "Asian", "Hispanic", "Middle Eastern", "Mixed"])
+            avatar_style = st.selectbox("Style", ["Professional", "Casual", "Artistic", "Business", "Creative"])
+        
+        st.caption("💡 AI will create a photorealistic person matching these characteristics")
     
     # Video Settings
     st.subheader("🎬 Video Settings")
@@ -278,11 +308,21 @@ if user_input:
                     "language": language,
                     "duration": duration_limit,
                     "resolution": resolution,
-                    "image_strength": image_strength  # Add face consistency control
+                    "image_strength": image_strength,  # Add face consistency control
+                    "random_avatar": avatar_mode == "Random Avatar"
                 }
                 
-                # Add image if uploaded
-                if uploaded_image:
+                # Add random avatar parameters if in random mode
+                if avatar_mode == "Random Avatar":
+                    data.update({
+                        "avatar_gender": avatar_gender,
+                        "avatar_age": avatar_age,
+                        "avatar_ethnicity": avatar_ethnicity,
+                        "avatar_style": avatar_style
+                    })
+                
+                # Add image if uploaded (Reference Image mode)
+                if uploaded_image and avatar_mode == "Reference Image":
                     uploaded_image.seek(0)
                     files["image"] = (uploaded_image.name, uploaded_image, uploaded_image.type)
                 
