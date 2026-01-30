@@ -122,14 +122,23 @@ async def generate_avatar_video(
     avatar_gender: str = "Any",
     avatar_age: str = "Any",
     avatar_ethnicity: str = "Any",
-    avatar_style: str = "Professional"
+    avatar_style: str = "Professional",
+    fresh_start_mode: bool = False
 ):
     """
     Background task to generate avatar video using LTX-2
     Supports both reference image mode and random avatar generation
+    Fresh start mode disables all training/memory without deleting data
     """
     try:
         logger.info(f"Starting LTX-2 generation for job {job_id}")
+        
+        # Fresh Start Mode - ignore training and reference images
+        if fresh_start_mode:
+            logger.info(f"Fresh Start Mode enabled for job {job_id} - ignoring all training/memory")
+            image_path = None  # Disable reference image
+            image_strength = 0.0  # No image conditioning
+        
         update_job_status(job_id, JobStatus.PROCESSING, progress=10.0)
         
         # Build prompt with language and text
@@ -298,7 +307,8 @@ async def generate(
     avatar_gender: str = Form("Any", description="Gender for random avatar"),
     avatar_age: str = Form("Any", description="Age range for random avatar"),
     avatar_ethnicity: str = Form("Any", description="Ethnicity for random avatar"),
-    avatar_style: str = Form("Professional", description="Style for random avatar")
+    avatar_style: str = Form("Professional", description="Style for random avatar"),
+    fresh_start_mode: bool = Form(False, description="Ignore all training/memory and generate fresh")
 ):
     """
     Generate avatar video with synchronized audio using LTX-2
@@ -349,7 +359,8 @@ async def generate(
         avatar_gender=avatar_gender,
         avatar_age=avatar_age,
         avatar_ethnicity=avatar_ethnicity,
-        avatar_style=avatar_style
+        avatar_style=avatar_style,
+        fresh_start_mode=fresh_start_mode
     )
     
     return GenerateResponse(

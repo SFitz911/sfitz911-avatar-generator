@@ -162,6 +162,20 @@ with st.sidebar:
     st.divider()
     st.subheader("🧹 Workspace Management")
     
+    # Fresh Start Mode Toggle
+    fresh_start_mode = st.toggle(
+        "🆕 Fresh Start Mode",
+        value=False,
+        help="Temporarily disable ALL training and memory. Training data is preserved but not used."
+    )
+    
+    if fresh_start_mode:
+        st.warning("⚠️ **Fresh Start Mode Active**: All training and memory temporarily disabled. Generating like brand new installation.")
+    else:
+        st.info("✅ **Normal Mode**: Using training data and memory if available")
+    
+    st.divider()
+    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -188,7 +202,7 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Error: {e}")
     
-    st.caption("⚠️ **Tip:** Clean workspace before uploading a new avatar to prevent face mixing")
+    st.caption("💡 **Tip:** Use Fresh Start Mode to test without training, or Clean Workspace before new avatars")
     
     # Face Training Section
     st.divider()
@@ -325,7 +339,8 @@ if user_input:
                     "duration": duration_limit,
                     "resolution": resolution,
                     "image_strength": image_strength,  # Add face consistency control
-                    "random_avatar": avatar_mode == "Random Avatar"
+                    "random_avatar": avatar_mode == "Random Avatar",
+                    "fresh_start_mode": fresh_start_mode  # Disable training/memory if enabled
                 }
                 
                 # Add random avatar parameters if in random mode
