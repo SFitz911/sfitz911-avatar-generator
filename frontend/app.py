@@ -70,19 +70,8 @@ with st.sidebar:
         index=0
     )
     
-    # Voice Selection
-    st.subheader("🎙️ Voice Settings")
-    voice_provider = st.selectbox(
-        "TTS Provider",
-        options=["ElevenLabs", "Azure", "Google", "AWS Polly"],
-        index=0
-    )
-    
-    voice_id = st.text_input(
-        "Voice ID (optional)",
-        value="",
-        help="Leave empty for default voice"
-    )
+    # Info: No TTS needed with LTX-2!
+    st.info("🎙️ **Audio Generation:** LTX-2 automatically generates natural speech in your selected language!")
     
     # Avatar Image Upload
     st.subheader("🖼️ Avatar Image")
@@ -97,8 +86,9 @@ with st.sidebar:
     
     # Video Settings
     st.subheader("🎬 Video Settings")
-    resolution = st.radio("Resolution", ["720p", "480p"], index=0)
-    duration_limit = st.slider("Max Duration (seconds)", 5, 120, 30)
+    resolution = st.radio("Base Resolution", ["512", "768"], index=0)
+    duration_limit = st.slider("Max Duration (seconds)", 5, 30, 20)
+    st.caption("LTX-2 generates at base resolution then upscales to 2x (1024 or 1536)")
     
     # LLM Settings
     st.subheader("🧠 AI Settings")
@@ -112,7 +102,8 @@ with st.sidebar:
         )
 
 # Main Interface
-st.markdown('<h1 class="main-header">🤖 Avatar Chat Interface</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🤖 Avatar Chat Interface (LTX-2)</h1>', unsafe_allow_html=True)
+st.caption("⚡ Powered by LTX-2 - Unified Audio-Video Generation")
 
 # Initialize Chat History
 if "messages" not in st.session_state:
@@ -171,13 +162,11 @@ if user_input:
         # Step 2: Generate Video
         with st.spinner("🎬 Generating avatar video..."):
             try:
-                # Prepare request
+                # Prepare request for LTX-2
                 files = {}
                 data = {
                     "text": ai_response,
                     "language": language,
-                    "voice": voice_id or "default",
-                    "tts_provider": voice_provider.lower().replace(" ", "_"),
                     "duration": duration_limit,
                     "resolution": resolution
                 }
