@@ -118,6 +118,7 @@ async def generate_avatar_video(
     num_frames: int,
     image_strength: float = 1.0,
     random_avatar: bool = False,
+    avatar_description: str = "A friendly professional",
     avatar_gender: str = "Any",
     avatar_age: str = "Any",
     avatar_ethnicity: str = "Any",
@@ -133,13 +134,27 @@ async def generate_avatar_video(
         
         # Build prompt with language and text
         if random_avatar:
-            # Build random avatar description
-            gender_desc = "" if avatar_gender == "Any" else f"{avatar_gender.lower()} "
-            age_desc = "" if avatar_age == "Any" else f"{avatar_age.lower()}, "
-            ethnicity_desc = "" if avatar_ethnicity == "Any" else f"{avatar_ethnicity} "
-            style_desc = avatar_style.lower()
+            # Build comprehensive avatar description combining user input with selectors
+            characteristics = []
             
-            prompt = f"A photorealistic {gender_desc}{ethnicity_desc}person, {age_desc}{style_desc} appearance, speaking fluently in {language}. They say: '{text}' Clear pronunciation, engaging eye contact, natural expressions, modern setting, high quality, cinematic lighting, 4K detail."
+            # Add user description (primary)
+            if avatar_description and avatar_description.strip():
+                characteristics.append(avatar_description.strip())
+            
+            # Add optional selectors if specified
+            if avatar_gender != "Any":
+                characteristics.append(f"{avatar_gender.lower()} person")
+            if avatar_age != "Any":
+                characteristics.append(f"age {avatar_age.lower()}")
+            if avatar_ethnicity != "Any":
+                characteristics.append(f"{avatar_ethnicity} ethnicity")
+            if avatar_style != "Professional":
+                characteristics.append(f"{avatar_style.lower()} style")
+            
+            # Combine all characteristics
+            avatar_details = ", ".join(characteristics) if characteristics else "A professional person"
+            
+            prompt = f"Photorealistic video: {avatar_details}. Speaking fluently in {language}, saying: '{text}' Clear pronunciation, engaging eye contact, natural expressions, cinematic lighting, high quality 4K detail, modern setting."
             logger.info(f"Random avatar prompt: {prompt}")
         elif image_path:
             prompt = f"A professional person speaking fluently in {language}. They say: '{text}' Clear pronunciation, engaging eye contact, natural gestures, modern setting, professional appearance."
@@ -279,6 +294,7 @@ async def generate(
     image: Optional[UploadFile] = File(None, description="Avatar reference image (optional)"),
     image_strength: float = Form(1.0, description="Face consistency strength (0.5-2.0, higher = more consistent)"),
     random_avatar: bool = Form(False, description="Generate random avatar instead of using reference image"),
+    avatar_description: str = Form("A friendly professional", description="Detailed description of the avatar to generate"),
     avatar_gender: str = Form("Any", description="Gender for random avatar"),
     avatar_age: str = Form("Any", description="Age range for random avatar"),
     avatar_ethnicity: str = Form("Any", description="Ethnicity for random avatar"),
@@ -329,6 +345,7 @@ async def generate(
         num_frames=num_frames,
         image_strength=image_strength,
         random_avatar=random_avatar,
+        avatar_description=avatar_description,
         avatar_gender=avatar_gender,
         avatar_age=avatar_age,
         avatar_ethnicity=avatar_ethnicity,

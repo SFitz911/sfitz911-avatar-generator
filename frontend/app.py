@@ -109,21 +109,37 @@ with st.sidebar:
         uploaded_image = None
         image_strength = 0.0
         
-        st.info("🎲 **Random Avatar Mode**: AI will generate a unique, realistic person")
+        st.info("🎲 **Random Avatar Mode**: AI will generate a unique, realistic person from your description")
         
-        # Avatar characteristics
-        st.write("**Customize Random Avatar:**")
+        # Avatar description (primary input)
+        avatar_description = st.text_area(
+            "Describe Your Avatar",
+            value="A friendly professional with a warm smile",
+            height=100,
+            help="Describe appearance, personality, clothing, setting, etc. Be as detailed as you want!"
+        )
         
-        col1, col2 = st.columns(2)
-        with col1:
-            avatar_gender = st.selectbox("Gender", ["Any", "Male", "Female", "Non-binary"])
-            avatar_age = st.selectbox("Age Range", ["Any", "Young Adult (20-30)", "Adult (30-45)", "Middle Age (45-60)", "Senior (60+)"])
+        st.caption("**Examples:**")
+        st.caption("• A confident business executive in a navy suit, gray hair, glasses, modern office")
+        st.caption("• A young creative artist with colorful hair, casual style, artistic studio background")
+        st.caption("• An elderly teacher with kind eyes, cardigan, library setting with books")
         
-        with col2:
-            avatar_ethnicity = st.selectbox("Ethnicity", ["Any", "Caucasian", "African", "Asian", "Hispanic", "Middle Eastern", "Mixed"])
-            avatar_style = st.selectbox("Style", ["Professional", "Casual", "Artistic", "Business", "Creative"])
+        st.divider()
         
-        st.caption("💡 AI will create a photorealistic person matching these characteristics")
+        # Optional quick selectors
+        with st.expander("⚙️ Quick Selectors (Optional)", expanded=False):
+            st.caption("These will be combined with your description above")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                avatar_gender = st.selectbox("Gender", ["Any", "Male", "Female", "Non-binary"])
+                avatar_age = st.selectbox("Age Range", ["Any", "Young Adult (20-30)", "Adult (30-45)", "Middle Age (45-60)", "Senior (60+)"])
+            
+            with col2:
+                avatar_ethnicity = st.selectbox("Ethnicity", ["Any", "Caucasian", "African", "Asian", "Hispanic", "Middle Eastern", "Mixed"])
+                avatar_style = st.selectbox("Style", ["Professional", "Casual", "Artistic", "Business", "Creative"])
+        
+        st.caption("💡 **Tip:** The more detailed your description, the better the AI can match your vision!")
     
     # Video Settings
     st.subheader("🎬 Video Settings")
@@ -315,6 +331,7 @@ if user_input:
                 # Add random avatar parameters if in random mode
                 if avatar_mode == "Random Avatar":
                     data.update({
+                        "avatar_description": avatar_description,
                         "avatar_gender": avatar_gender,
                         "avatar_age": avatar_age,
                         "avatar_ethnicity": avatar_ethnicity,
