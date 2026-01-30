@@ -303,6 +303,8 @@ async def generate(
     image: Optional[UploadFile] = File(None, description="Avatar reference image (optional)"),
     image_strength: float = Form(1.0, description="Face consistency strength (0.5-2.0, higher = more consistent)"),
     random_avatar: bool = Form(False, description="Generate random avatar instead of using reference image"),
+    use_trained_profile: bool = Form(False, description="Use trained profile photos"),
+    trained_person_name: Optional[str] = Form(None, description="Name of trained profile to use"),
     avatar_description: str = Form("A friendly professional", description="Detailed description of the avatar to generate"),
     avatar_gender: str = Form("Any", description="Gender for random avatar"),
     avatar_age: str = Form("Any", description="Age range for random avatar"),
@@ -319,9 +321,27 @@ async def generate(
     # Generate unique job ID
     job_id = str(uuid.uuid4())
     
-    # Handle image upload
+    # Handle image upload or trained profile
     image_path = None
-    if image:
+    
+    if use_trained_profile and trained_person_name:
+        # Load first training photo from avatar_clean folder
+        ltx2_path = Path(LTX2_DIR)
+        avatar_folder = ltx2_path / "avatar_clean"
+        
+        if avatar_folder.exists():
+            training_photos = list(avatar_folder.glob("training_*.png")) + list(avatar_folder.glob("training_*.jpg"))
+            if training_photos:
+                # Use the first training photo
+                image_path = str(training_photos[0])
+                logger.info(f"Using trained profile photo: {image_path}")
+            else:
+                logger.warning(f"No training photos found for {trained_person_name}")
+        else:
+            logger.warning(f"Avatar folder not found for trained profile {trained_person_name}")
+    
+    elif image:
+        # Regular image upload
         image_ext = Path(image.filename).suffix
         image_path = str(TEMP_PATH / f"{job_id}_avatar{image_ext}")
         

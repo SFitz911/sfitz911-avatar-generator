@@ -76,14 +76,51 @@ with st.sidebar:
     # Avatar Mode Selection
     st.subheader("🖼️ Avatar Mode")
     
+    # Check if trained profile exists
+    use_trained_profile = False
+    trained_person_name = None
+    try:
+        training_check = requests.get(f"{api_url}/training-status")
+        if training_check.status_code == 200:
+            training_data = training_check.json()
+            if training_data.get("has_training") and training_data.get("status") == "completed":
+                trained_person_name = training_data.get("person_name")
+                
+                # Show trained profile toggle
+                use_trained_profile = st.toggle(
+                    f"🎓 Use Trained Profile: {trained_person_name}",
+                    value=True,
+                    help=f"Use the trained {trained_person_name} profile for consistent, accurate face generation (Accuracy: {training_data.get('current_accuracy', 0):.1f}%)"
+                )
+                
+                if use_trained_profile:
+                    st.success(f"✅ Using trained profile: **{trained_person_name}** ({training_data.get('current_accuracy', 0):.1f}% accuracy)")
+                    st.caption("💡 Face Consistency Strength will be automatically set to 1.8 for trained profiles")
+    except:
+        pass
+    
     avatar_mode = st.radio(
         "Generation Mode",
-        options=["Reference Image", "Random Avatar"],
-        index=0,
-        help="Use your own photo or let AI create a random person"
+        options=["Trained Profile", "Reference Image", "Random Avatar"] if use_trained_profile else ["Reference Image", "Random Avatar"],
+        index=0 if use_trained_profile else 0,
+        help="Use trained profile, upload your own photo, or let AI create a random person",
+        disabled=use_trained_profile  # Auto-select when trained profile toggle is on
     )
     
-    if avatar_mode == "Reference Image":
+    # Override avatar_mode if trained profile toggle is on
+    if use_trained_profile:
+        avatar_mode = "Trained Profile"
+    
+    if avatar_mode == "Trained Profile":
+        # Using trained profile - set variables
+        uploaded_image = None  # Will be loaded from trained photos on backend
+        image_strength = 1.8  # High strength for trained profiles
+        
+        st.info(f"🎓 **Trained Profile Mode**: Using {trained_person_name}'s training photos")
+        st.caption(f"✅ Face Consistency Strength: **1.8** (optimized for trained profiles)")
+        st.caption(f"📸 Photos: Automatically loaded from training data")
+        
+    elif avatar_mode == "Reference Image":
         # Upload reference image
         uploaded_image = st.file_uploader(
             "Upload Reference Image",
@@ -439,6 +476,8 @@ if user_input:
                     "resolution": resolution,
                     "image_strength": image_strength,  # Add face consistency control
                     "random_avatar": avatar_mode == "Random Avatar",
+                    "use_trained_profile": avatar_mode == "Trained Profile",
+                    "trained_person_name": trained_person_name if avatar_mode == "Trained Profile" else None,
                     "fresh_start_mode": fresh_start_mode  # Disable training/memory if enabled
                 }
                 
@@ -452,7 +491,7 @@ if user_input:
                         "avatar_style": avatar_style
                     })
                 
-                # Add image if uploaded (Reference Image mode)
+                # Add image if uploaded (Reference Image mode only)
                 if uploaded_image and avatar_mode == "Reference Image":
                     uploaded_image.seek(0)
                     files["image"] = (uploaded_image.name, uploaded_image, uploaded_image.type)
