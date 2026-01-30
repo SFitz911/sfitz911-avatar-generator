@@ -846,7 +846,8 @@ async def train_face(
 @app.post("/master-reset")
 async def master_reset():
     """
-    MASTER RESET: Delete all videos, training data, and workspace
+    MASTER RESET: Complete wipe of ALL data, training, and memory
+    Returns system to fresh installation state - NO bleed over or cross contamination
     This is a destructive operation that cannot be undone
     """
     try:
@@ -855,20 +856,32 @@ async def master_reset():
         
         ltx2_path = Path(LTX2_DIR)
         
-        # 1. Delete all generated videos from outputs folder
-        for video_file in OUTPUT_PATH.glob("*.mp4"):
-            video_file.unlink()
-            deleted_count += 1
-            deleted_items.append(f"Output video: {video_file.name}")
+        logger.warning("=" * 60)
+        logger.warning("MASTER RESET INITIATED - WIPING ALL DATA")
+        logger.warning("=" * 60)
         
-        # 2. Delete all videos from LTX-2 directory
-        for video_file in ltx2_path.glob("*.mp4"):
-            video_file.unlink()
-            deleted_count += 1
-            deleted_items.append(f"LTX-2 video: {video_file.name}")
+        # 1. Delete ALL videos from outputs folder (including subdirectories)
+        if OUTPUT_PATH.exists():
+            for item in OUTPUT_PATH.rglob("*"):
+                if item.is_file():
+                    item.unlink()
+                    deleted_count += 1
+                    deleted_items.append(f"Output: {item.name}")
         
-        # 3. Delete training photos
-        ref_folders = ["natasha_refs", "natasha_single", "avatar_clean", "reference_images", "refs"]
+        # 2. Delete ALL videos and generated content from LTX-2 directory
+        video_patterns = ["*.mp4", "*.avi", "*.mov", "*.mkv", "*.webm"]
+        for pattern in video_patterns:
+            for video_file in ltx2_path.glob(pattern):
+                video_file.unlink()
+                deleted_count += 1
+                deleted_items.append(f"LTX-2 video: {video_file.name}")
+        
+        # 3. Delete ALL training photos and reference folders
+        ref_folders = [
+            "natasha_refs", "natasha_single", "avatar_clean", 
+            "reference_images", "refs", "training_data",
+            "custom_refs", "user_photos"
+        ]
         for folder_name in ref_folders:
             folder_path = ltx2_path / folder_name
             if folder_path.exists():
@@ -876,38 +889,73 @@ async def master_reset():
                 deleted_count += 1
                 deleted_items.append(f"Training folder: {folder_name}")
         
-        # 4. Delete training logs and directory
+        # 4. Delete ALL training logs, profiles, and metadata
         training_logs_dir = BASE_DIR / "outputs" / "training_logs"
         if training_logs_dir.exists():
-            for log_file in training_logs_dir.glob("*.json"):
-                log_file.unlink()
-                deleted_count += 1
-                deleted_items.append(f"Training log: {log_file.name}")
-            # Remove the directory itself
-            try:
-                training_logs_dir.rmdir()
-                deleted_items.append("Training logs directory removed")
-            except:
-                pass  # Directory not empty or doesn't exist
-        
-        # 5. Clear temp files
-        for temp_file in TEMP_PATH.glob("*"):
-            temp_file.unlink()
+            shutil.rmtree(training_logs_dir)
+            deleted_items.append("ALL training logs deleted")
             deleted_count += 1
-            deleted_items.append(f"Temp file: {temp_file.name}")
         
-        # 6. Clear job database
+        # Recreate empty directory for future use
+        training_logs_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 5. Clear ALL temp files and uploaded images
+        if TEMP_PATH.exists():
+            for temp_item in TEMP_PATH.rglob("*"):
+                if temp_item.is_file():
+                    temp_item.unlink()
+                    deleted_count += 1
+                    deleted_items.append(f"Temp: {temp_item.name}")
+        
+        # 6. Clear ALL cached latents and model cache (if they exist)
+        cache_folders = ["cache", ".cache", "cached_latents", "model_cache"]
+        for cache_name in cache_folders:
+            cache_path = ltx2_path / cache_name
+            if cache_path.exists():
+                shutil.rmtree(cache_path)
+                deleted_items.append(f"Cache cleared: {cache_name}")
+                deleted_count += 1
+        
+        # 7. Clear in-memory job database
         jobs_db.clear()
         deleted_items.append("Job history cleared")
         
-        logger.warning(f"MASTER RESET EXECUTED: {deleted_count} items deleted")
+        # 8. Delete any saved LoRA weights or custom models
+        lora_path = ltx2_path / "loras"
+        if lora_path.exists():
+            for lora_file in lora_path.glob("*.safetensors"):
+                if "ltx-2" not in lora_file.name.lower():  # Don't delete base model LoRAs
+                    lora_file.unlink()
+                    deleted_count += 1
+                    deleted_items.append(f"Custom LoRA: {lora_file.name}")
+        
+        # 9. Clear any workspace metadata files
+        metadata_files = [".workspace_state", ".last_generation", ".training_cache"]
+        for meta_file in metadata_files:
+            meta_path = ltx2_path / meta_file
+            if meta_path.exists():
+                meta_path.unlink()
+                deleted_items.append(f"Metadata cleared: {meta_file}")
+        
+        logger.warning(f"MASTER RESET COMPLETE: {deleted_count} items deleted")
+        logger.warning("System returned to FRESH INSTALLATION state")
+        logger.warning("NO memory, NO bleed over, NO cross contamination")
+        logger.warning("=" * 60)
         
         return {
             "status": "success",
-            "message": "Master reset complete - all data deleted",
+            "message": "✅ MASTER RESET COMPLETE - System is now FRESH with ZERO memory",
             "deleted_count": deleted_count,
-            "deleted_items": deleted_items[:20],  # First 20 items
-            "warning": "This action cannot be undone"
+            "deleted_items": deleted_items[:30],  # Show more items
+            "details": {
+                "videos_deleted": "All output and LTX-2 videos",
+                "training_deleted": "All photos, logs, and profiles",
+                "cache_cleared": "All temporary and cached data",
+                "memory_cleared": "Job history and metadata",
+                "custom_models": "User LoRAs removed (base models safe)",
+                "status": "FRESH INSTALLATION - No bleed over"
+            },
+            "warning": "⚠️ This action cannot be undone. System is completely clean."
         }
         
     except Exception as e:
