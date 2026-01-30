@@ -182,7 +182,14 @@ with st.sidebar:
     st.subheader("🎬 Video Settings")
     resolution = st.radio("Base Resolution", ["512", "768"], index=0)
     duration_limit = st.slider("Max Duration (seconds)", 5, 30, 20)
-    st.caption("LTX-2 generates at base resolution then upscales to 2x (1024 or 1536)")
+    playback_speed = st.select_slider(
+        "Playback Speed",
+        options=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
+        value=1.25,
+        help="Speed up or slow down video playback (1.0 = normal speed)"
+    )
+    st.caption(f"LTX-2 generates at base resolution then upscales to 2x (1024 or 1536)")
+    st.caption(f"📹 Playback: **{playback_speed}x** speed")
     
     # LLM Settings
     st.subheader("🧠 AI Settings")
@@ -474,6 +481,7 @@ if user_input:
                     "language": language,
                     "duration": duration_limit,
                     "resolution": resolution,
+                    "playback_speed": playback_speed,
                     "image_strength": image_strength,  # Add face consistency control
                     "random_avatar": avatar_mode == "Random Avatar",
                     "use_trained_profile": avatar_mode == "Trained Profile",

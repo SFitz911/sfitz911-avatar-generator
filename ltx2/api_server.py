@@ -116,6 +116,7 @@ async def generate_avatar_video(
     image_path: Optional[str],
     resolution: str,
     num_frames: int,
+    playback_speed: float = 1.25,
     image_strength: float = 1.0,
     random_avatar: bool = False,
     avatar_description: str = "A friendly professional",
@@ -233,6 +234,41 @@ async def generate_avatar_video(
         
         logger.info(f"Video saved to {output_video_path}")
         
+        # Apply playback speed if not 1.0
+        if playback_speed != 1.0:
+            logger.info(f"Applying playback speed: {playback_speed}x")
+            temp_output = OUTPUT_PATH / f"{job_id}_temp.mp4"
+            
+            # Use ffmpeg to adjust playback speed
+            # setpts adjusts video speed, atempo adjusts audio speed
+            speed_filter = f"setpts={1.0/playback_speed}*PTS"
+            audio_filter = f"atempo={playback_speed}" if playback_speed <= 2.0 else f"atempo=2.0,atempo={playback_speed/2.0}"
+            
+            ffmpeg_cmd = [
+                "ffmpeg", "-i", str(output_video_path),
+                "-filter:v", speed_filter,
+                "-filter:a", audio_filter,
+                "-y",  # Overwrite output
+                str(temp_output)
+            ]
+            
+            speed_process = subprocess.run(
+                ffmpeg_cmd,
+                capture_output=True,
+                text=True
+            )
+            
+            if speed_process.returncode == 0 and temp_output.exists():
+                # Replace original with speed-adjusted version
+                output_video_path.unlink()
+                temp_output.rename(output_video_path)
+                logger.info(f"Playback speed adjusted to {playback_speed}x")
+            else:
+                logger.warning(f"Failed to adjust playback speed: {speed_process.stderr}")
+                # Keep original video if speed adjustment fails
+                if temp_output.exists():
+                    temp_output.unlink()
+        
         # Cleanup temp image
         if image_path and Path(image_path).exists():
             Path(image_path).unlink(missing_ok=True)
@@ -300,6 +336,7 @@ async def generate(
     language: str = Form("English", description="Language for speech"),
     resolution: str = Form("512", description="Base resolution (512 or 768)"),
     duration: int = Form(20, description="Video duration in seconds (5-30)"),
+    playback_speed: float = Form(1.25, description="Playback speed multiplier (0.5-2.0)"),
     image: Optional[UploadFile] = File(None, description="Avatar reference image (optional)"),
     image_strength: float = Form(1.0, description="Face consistency strength (0.5-2.0, higher = more consistent)"),
     random_avatar: bool = Form(False, description="Generate random avatar instead of using reference image"),
@@ -373,6 +410,7 @@ async def generate(
         image_path=image_path,
         resolution=resolution,
         num_frames=num_frames,
+        playback_speed=playback_speed,
         image_strength=image_strength,
         random_avatar=random_avatar,
         avatar_description=avatar_description,
